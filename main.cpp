@@ -6,8 +6,7 @@
 
 int main()
 {
-    std::unique_ptr<Blog> blog =
-        std::make_unique<Blog>(new DB("tcp://127.0.0.1:3306", "admin", "password", "blogdb"), new User);
+    std::unique_ptr<Blog> blog = std::make_unique<Blog>(new DB("tcp://127.0.0.1:3306", "admin", "password", "blogdb"));
     clear_screen;
 
     blog->Menu();
