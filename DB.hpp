@@ -3,6 +3,7 @@
 
 #include <mysql-cppconn-8/mysql/jdbc.h>
 #include <string>
+#include <vector>
 #include "User.hpp"
 
 class DB {
@@ -26,7 +27,8 @@ class DB {
     bool getUser(const std::string& username, const std::string& password, User*& user);
     bool changeUserField(const std::string& field, const std::string& value, User*& user);
     bool createBlog(const std::string& name, const std::string& topic);
-
+    bool getBlogList(std::vector<std::string>& names, std::vector<std::string>& topics);
+    bool getPostList(const std::string& blog_name, std::vector<std::string>& content);
     ~DB()
     {
         delete con;
@@ -167,6 +169,59 @@ bool DB::createBlog(const std::string& name, const std::string& topic)
             std::cout << " (MySQL error code: " << e.getErrorCode();
             std::cout << ", SQLState: " << e.getSQLState() << " )" << std::endl;
         }
+        return false;
+    }
+    return true;
+}
+
+bool DB::getBlogList(std::vector<std::string>& names, std::vector<std::string>& topics)
+{
+    try {
+        sql::ResultSet* res;
+        sql::Statement* stmt;
+
+        stmt = con->createStatement();
+        res = stmt->executeQuery("SELECT * FROM Blog");
+
+        while (res->next()) {
+            names.push_back(res->getString("blog_name"));
+            topics.push_back(res->getString("topic"));
+        }
+
+        delete stmt;
+        delete res;
+    } catch (sql::SQLException& e) {
+        std::cout << "# ERR: SQLException in " << __FILE__;
+        std::cout << "(" << __FUNCTION__ << ") on line " << __LINE__ << std::endl;
+        std::cout << "# ERR: " << e.what();
+        std::cout << " (MySQL error code: " << e.getErrorCode();
+        std::cout << ", SQLState: " << e.getSQLState() << " )" << std::endl;
+        return false;
+    }
+    return true;
+}
+
+bool DB::getPostList(const std::string& blog_name, std::vector<std::string>& content)
+{
+    try {
+        sql::ResultSet* res;
+        sql::PreparedStatement* pstmt;
+        pstmt = con->prepareStatement("SELECT * FROM Post WHERE blog_id IN (SELECT id FROM Blog WHERE blog_name=(?))");
+        pstmt->setString(1, blog_name);
+        res = pstmt->executeQuery();
+
+        while (res->next()) {
+            content.push_back(res->getString("content"));
+        }
+
+        delete pstmt;
+        delete res;
+    } catch (sql::SQLException& e) {
+        std::cout << "# ERR: SQLException in " << __FILE__;
+        std::cout << "(" << __FUNCTION__ << ") on line " << __LINE__ << std::endl;
+        std::cout << "# ERR: " << e.what();
+        std::cout << " (MySQL error code: " << e.getErrorCode();
+        std::cout << ", SQLState: " << e.getSQLState() << " )" << std::endl;
         return false;
     }
     return true;

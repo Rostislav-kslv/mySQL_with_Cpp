@@ -31,6 +31,10 @@ class Blog {
     void ChangeUsername();
     void ChangeEmail();
     void CreateBlog();
+    void BlogPagePrint(int page, const std::vector<std::string>& names, const std::vector<std::string>& topics);
+    void PostPagePrint(int page, const std::vector<std::string>& content);
+    void PostsPage(const std::string& name);
+    void BlogsPage();
 };
 
 int GetChoice(int min, int max)
@@ -127,7 +131,8 @@ void Blog::MainPage()
             Profile();
             break;
         case 2:
-            // blogs
+            clear_screen;
+            BlogsPage();
             break;
         case 3:
             clear_screen;
@@ -266,4 +271,104 @@ void Blog::CreateBlog()
     }
 }
 
+void Blog::BlogPagePrint(int page, const std::vector<std::string>& names, const std::vector<std::string>& topics)
+{
+    if ((page - 1) * 5 < names.size() && page > 0) {
+        clear_screen;
+        std::cout << "\n\tBlogs | Page #" << page << std::endl;
+        for (int i = (page - 1) * 5; i < names.size(); i++) {
+            std::cout << "\n\t* " << std::setw(2) << std::right << (i % 5) + 1 << ". " << std::setw(25) << std::left
+                      << names[i] << " | " << std::setw(25) << std::left << topics[i] << std::endl;
+            if ((i + 1) % 5 == 0) {
+                break;
+            }
+        }
+        std::cout << "\n\n\t---Enter blog number to open it's page" << std::endl;
+        std::cout << "\n\t---Enter (0) to select page" << std::endl;
+        std::cout << "\n\t---Enter (6) to go back to main page" << std::endl;
+
+        int choice = GetChoice(0, 6);
+        if (choice == 0) {
+            std::cout << "\n\tEnter the number of page: ";
+            std::cin >> page;
+            BlogPagePrint(page, names, topics);
+        } else if (choice == 6) {
+            clear_screen;
+            MainPage();
+        } else {
+            clear_screen;
+            PostsPage(names[choice + (page - 1) * 5 - 1]);
+        }
+    } else {
+        std::cout << "\n\t***Current page does not exist***" << std::endl;
+        MainPage();
+    }
+}
+
+void Blog::PostPagePrint(int page, const std::vector<std::string>& content)
+{
+    if ((page - 1) * 5 < content.size() && page > 0) {
+        clear_screen;
+        std::cout << "\n\tBlogs | Page #" << page << std::endl;
+        for (int i = (page - 1) * 5; i < content.size(); i++) {
+            std::cout << "\n\t* " << std::setw(2) << std::right << (i % 5) + 1 << ". " << std::setw(25) << std::left
+                      << content[i] << std::endl;
+            if ((i + 1) % 5 == 0) {
+                break;
+            }
+        }
+        std::cout << "\n\n\t---Enter post number to open it's page" << std::endl;
+        std::cout << "\n\t---Enter (0) to select page" << std::endl;
+        std::cout << "\n\t---Enter (6) to create post" << std::endl;
+        std::cout << "\n\t---Enter (7) to go back to main page" << std::endl;
+
+        int choice = GetChoice(0, 7);
+        if (choice == 0) {
+            std::cout << "\n\tEnter the number of page: ";
+            std::cin >> page;
+            PostPagePrint(page, content);
+        } else if (choice == 6) {
+            std::cout << "\n\tCreate post";
+            ///
+
+        } else if (choice == 7) {
+            clear_screen;
+            MainPage();
+        } else {
+            clear_screen;
+            std::cout << "\n\tPost open " << content[choice + (page - 1) * 5 - 1] << std::endl;
+        }
+    } else {
+        std::cout << "\n\t***Current page does not exist***" << std::endl;
+        MainPage();
+    }
+}
+
+void Blog::PostsPage(const std::string& name)
+{
+    std::cout << "\n\tBlog name: " << name << std::endl;
+    std::vector<std::string> content;
+
+    if (db_m->getPostList(name, content)) {
+        PostPagePrint(1, content);
+    } else {
+        clear_screen;
+        std::cout << "\n\t***Error! Smth went wrong***";
+        BlogsPage();
+    }
+}
+
+void Blog::BlogsPage()
+{
+    std::vector<std::string> names;
+    std::vector<std::string> topics;
+
+    if (db_m->getBlogList(names, topics)) {
+        BlogPagePrint(1, names, topics);
+    } else {
+        clear_screen;
+        std::cout << "\n\t***Error! Smth went wrong***";
+        MainPage();
+    }
+}
 #endif /* TMP_BLOG_ */
