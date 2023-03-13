@@ -31,9 +31,13 @@ class Blog {
     void ChangeUsername();
     void ChangeEmail();
     void CreateBlog();
-    void BlogPagePrint(int page, const std::vector<std::string>& names, const std::vector<std::string>& topics);
-    void PostPagePrint(int page, const std::vector<std::string>& content);
-    void PostsPage(const std::string& name);
+    void BlogPagePrint(int page, const std::vector<std::string>& names, const std::vector<std::string>& topics,
+                       const std::vector<int>& ids);
+    void PostPagePrint(int page, const std::vector<std::string>& content, const std::vector<int> ids,
+                       const int blog_id);
+    void CommentPagePrint(int page, const std::vector<std::string>& comments, const int post_id);
+    void CommentsPage(const std::string& name, const int post_id);
+    void PostsPage(const std::string& name, int blog_id);
     void BlogsPage();
 };
 
@@ -271,7 +275,8 @@ void Blog::CreateBlog()
     }
 }
 
-void Blog::BlogPagePrint(int page, const std::vector<std::string>& names, const std::vector<std::string>& topics)
+void Blog::BlogPagePrint(int page, const std::vector<std::string>& names, const std::vector<std::string>& topics,
+                         const std::vector<int>& ids)
 {
     if ((page - 1) * 5 < names.size() && page > 0) {
         clear_screen;
@@ -291,25 +296,29 @@ void Blog::BlogPagePrint(int page, const std::vector<std::string>& names, const 
         if (choice == 0) {
             std::cout << "\n\tEnter the number of page: ";
             std::cin >> page;
-            BlogPagePrint(page, names, topics);
+            BlogPagePrint(page, names, topics, ids);
         } else if (choice == 6) {
             clear_screen;
             MainPage();
         } else {
             clear_screen;
-            PostsPage(names[choice + (page - 1) * 5 - 1]);
+            PostsPage(names[choice + (page - 1) * 5 - 1], ids[choice + (page - 1) * 5 - 1]);
         }
     } else {
+        clear_screen;
         std::cout << "\n\t***Current page does not exist***" << std::endl;
         MainPage();
     }
 }
 
-void Blog::PostPagePrint(int page, const std::vector<std::string>& content)
+void Blog::PostPagePrint(int page, const std::vector<std::string>& content, const std::vector<int> ids,
+                         const int blog_id)
 {
-    if ((page - 1) * 5 < content.size() && page > 0) {
+    if (((page - 1) * 5 < content.size() && page > 0) || content.empty()) {
         clear_screen;
-        std::cout << "\n\tBlogs | Page #" << page << std::endl;
+        std::cout << "\n\tBlog_ID " << blog_id << std::endl;
+
+        std::cout << "\n\tPosts | Page #" << page << std::endl;
         for (int i = (page - 1) * 5; i < content.size(); i++) {
             std::cout << "\n\t* " << std::setw(2) << std::right << (i % 5) + 1 << ". " << std::setw(25) << std::left
                       << content[i] << std::endl;
@@ -326,31 +335,108 @@ void Blog::PostPagePrint(int page, const std::vector<std::string>& content)
         if (choice == 0) {
             std::cout << "\n\tEnter the number of page: ";
             std::cin >> page;
-            PostPagePrint(page, content);
+            PostPagePrint(page, content, ids, blog_id);
         } else if (choice == 6) {
             std::cout << "\n\tCreate post";
-            ///
+            std::cout << "\n\tPost content: ";
+            std::string text;
+            std::cin.ignore(1);
+            std::getline(std::cin, text);
+            if (db_m->createPost(text, blog_id)) {
+                clear_screen;
+                std::cout << "\n\t***Post created***";
+                MainPage();
+            } else {
+                std::cout << "\n\t***Error creating post***";
+                MainPage();
+            }
 
         } else if (choice == 7) {
             clear_screen;
             MainPage();
         } else {
             clear_screen;
-            std::cout << "\n\tPost open " << content[choice + (page - 1) * 5 - 1] << std::endl;
+            CommentsPage(content[choice + (page - 1) * 5 - 1], ids[choice + (page - 1) * 5 - 1]);
         }
     } else {
+        clear_screen;
         std::cout << "\n\t***Current page does not exist***" << std::endl;
         MainPage();
     }
 }
 
-void Blog::PostsPage(const std::string& name)
+void Blog::CommentPagePrint(int page, const std::vector<std::string>& comments, const int post_id)
+{
+    if (((page - 1) * 5 < comments.size() && page > 0) || comments.empty()) {
+        clear_screen;
+        std::cout << "\n\tPost_ID " << post_id << std::endl;
+
+        std::cout << "\n\tComments| Page #" << page << std::endl;
+        for (int i = (page - 1) * 5; i < comments.size(); i++) {
+            std::cout << "\n\t* " << std::setw(2) << std::right << (i % 5) + 1 << ". " << std::setw(25) << std::left
+                      << comments[i] << std::endl;
+            if ((i + 1) % 5 == 0) {
+                break;
+            }
+        }
+
+        std::cout << "\n\n\t---Enter (0) to select page" << std::endl;
+        std::cout << "\n\t---Enter (1) to create new comment" << std::endl;
+        std::cout << "\n\t---Enter (2) to go back to main page" << std::endl;
+
+        int choice = GetChoice(0, 2);
+        if (choice == 0) {
+            std::cout << "\n\tEnter the number of page: ";
+            std::cin >> page;
+            CommentPagePrint(page, comments, post_id);
+        } else if (choice == 1) {
+            std::cout << "\n\tCreate comment";
+            std::cout << "\n\tComment content: ";
+            std::string text;
+            std::cin.ignore(1);
+            std::getline(std::cin, text);
+            if (db_m->createComment(text, post_id)) {
+                clear_screen;
+                std::cout << "\n\t***Comment created***";
+                MainPage();
+            } else {
+                std::cout << "\n\t***Error creating comment***";
+                MainPage();
+            }
+
+        } else if (choice == 2) {
+            clear_screen;
+            MainPage();
+        }
+    } else {
+        clear_screen;
+        std::cout << "\n\t***Current page does not exist***" << std::endl;
+        MainPage();
+    }
+}
+
+void Blog::CommentsPage(const std::string& content, const int post_id)
+{
+    std::cout << "\n\tPost : " << content << std::endl;
+    std::vector<std::string> comments;
+
+    if (db_m->getCommentList(content, comments)) {
+        CommentPagePrint(1, comments, post_id);
+    } else {
+        clear_screen;
+        std::cout << "\n\t***Error! Smth went wrong***";
+        BlogsPage();
+    }
+}
+
+void Blog::PostsPage(const std::string& name, int blog_id)
 {
     std::cout << "\n\tBlog name: " << name << std::endl;
     std::vector<std::string> content;
+    std::vector<int> ids;
 
-    if (db_m->getPostList(name, content)) {
-        PostPagePrint(1, content);
+    if (db_m->getPostList(name, content, ids)) {
+        PostPagePrint(1, content, ids, blog_id);
     } else {
         clear_screen;
         std::cout << "\n\t***Error! Smth went wrong***";
@@ -362,9 +448,10 @@ void Blog::BlogsPage()
 {
     std::vector<std::string> names;
     std::vector<std::string> topics;
+    std::vector<int> ids;
 
-    if (db_m->getBlogList(names, topics)) {
-        BlogPagePrint(1, names, topics);
+    if (db_m->getBlogList(names, topics, ids)) {
+        BlogPagePrint(1, names, topics, ids);
     } else {
         clear_screen;
         std::cout << "\n\t***Error! Smth went wrong***";
