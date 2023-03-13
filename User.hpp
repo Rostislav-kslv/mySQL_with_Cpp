@@ -5,7 +5,6 @@
 
 class User {
   private:
-    // int id;
     std::string username;
     std::string password;
     std::string email;
